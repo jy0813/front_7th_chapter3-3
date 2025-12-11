@@ -214,7 +214,7 @@ export default [
         {
           patterns: [
             {
-              group: ['../*', './*'],
+              group: ['../*'],
               message: '❌ 상대 경로는 사용할 수 없습니다. @ alias를 사용하세요.',
             },
             // ❌ shared는 어떤 계층도 import 불가
