@@ -15,7 +15,19 @@ export const postApi = {
    * 게시물 목록 조회
    */
   getList: async (params: PostListParams): Promise<PostListResponse> => {
-    const response = await fetch(`/api/posts?limit=${params.limit}&skip=${params.skip}`);
+    const searchParams = new URLSearchParams({
+      limit: String(params.limit),
+      skip: String(params.skip),
+    });
+
+    if (params.sortBy && params.sortBy !== "none") {
+      searchParams.set("sortBy", params.sortBy);
+    }
+    if (params.order) {
+      searchParams.set("order", params.order);
+    }
+
+    const response = await fetch(`/api/posts?${searchParams.toString()}`);
     if (!response.ok) {
       throw new Error("게시물 목록을 가져오는데 실패했습니다.");
     }

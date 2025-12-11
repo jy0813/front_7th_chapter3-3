@@ -19,17 +19,17 @@ export type ModalType =
 export interface ModalDataMap {
   postAdd: undefined;
   postEdit: { postId: number };
-  postDetail: { postId: number };
+  postDetail: { postId: number; searchQuery?: string };
   commentAdd: { postId: number };
   commentEdit: { commentId: number; postId: number };
   userDetail: { userId: number };
 }
 
 /**
- * 모달 상태 인터페이스
+ * 모달 스택 아이템 인터페이스
  */
-export interface ModalState<T extends ModalType = ModalType> {
-  type: T | null;
+export interface ModalStackItem<T extends ModalType = ModalType> {
+  type: T;
   data: T extends keyof ModalDataMap ? ModalDataMap[T] : undefined;
 }
 
@@ -38,17 +38,21 @@ export interface ModalState<T extends ModalType = ModalType> {
  * features/widgets 레이어에서 사용
  */
 export interface ModalContextValue {
-  /** 현재 열린 모달 타입 */
+  /** 모달 스택 (중첩 모달 지원) */
+  modalStack: ModalStackItem[];
+  /** 현재 열린 최상위 모달 타입 (하위 호환) */
   modalType: ModalType | null;
-  /** 모달에 전달된 데이터 */
+  /** 현재 열린 최상위 모달 데이터 (하위 호환) */
   modalData: ModalDataMap[ModalType] | undefined;
-  /** 모달 열기 */
+  /** 모달 열기 (스택에 추가) */
   openModal: <T extends ModalType>(
     type: T,
     data?: ModalDataMap[T]
   ) => void;
-  /** 모달 닫기 */
+  /** 모달 닫기 (스택에서 최상위 제거) */
   closeModal: () => void;
+  /** 모든 모달 닫기 */
+  closeAllModals: () => void;
   /** 특정 모달이 열려있는지 확인 */
   isOpen: (type: ModalType) => boolean;
 }

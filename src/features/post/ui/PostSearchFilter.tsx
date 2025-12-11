@@ -1,6 +1,7 @@
-import { Search } from "lucide-react";
+import { Search, RotateCcw } from "lucide-react";
 import {
   Input,
+  Button,
   Select,
   SelectContent,
   SelectItem,
@@ -16,8 +17,9 @@ interface PostSearchFilterProps {
   onTagChange: (value: string) => void;
   sortBy: string;
   onSortByChange: (value: string) => void;
-  sortOrder: string;
-  onSortOrderChange: (value: string) => void;
+  order: string;
+  onOrderChange: (value: string) => void;
+  onReset?: () => void;
 }
 
 /**
@@ -31,11 +33,15 @@ export const PostSearchFilter = ({
   onTagChange,
   sortBy,
   onSortByChange,
-  sortOrder,
-  onSortOrderChange,
+  order,
+  onOrderChange,
+  onReset,
 }: PostSearchFilterProps) => {
   const { data: tagsData } = useTagList();
   const tags = tagsData ?? [];
+
+  // 필터/정렬이 적용되었는지 확인
+  const hasFilters = searchQuery || selectedTag || sortBy || order !== "asc";
 
   return (
     <div className="flex gap-4">
@@ -79,7 +85,7 @@ export const PostSearchFilter = ({
       </Select>
 
       {/* 정렬 순서 */}
-      <Select value={sortOrder} onValueChange={onSortOrderChange}>
+      <Select value={order} onValueChange={onOrderChange}>
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="정렬 순서" />
         </SelectTrigger>
@@ -88,6 +94,19 @@ export const PostSearchFilter = ({
           <SelectItem value="desc">내림차순</SelectItem>
         </SelectContent>
       </Select>
+
+      {/* 초기화 버튼 - 항상 노출, 필터 없으면 비활성화 */}
+      {onReset && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onReset}
+          disabled={!hasFilters}
+          title="필터 초기화"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </Button>
+      )}
     </div>
   );
 };

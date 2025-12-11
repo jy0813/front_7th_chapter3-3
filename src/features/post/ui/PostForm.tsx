@@ -1,70 +1,92 @@
-import { useState, useEffect } from "react";
-import { Button, Input, Textarea } from "@/shared/ui";
-import { useCreatePost, useUpdatePost } from "@/features/post/model/usePostMutation";
-import { usePostDetail } from "@/entities/post/model/usePostQuery";
-import { useModalContext } from "@/shared/lib/modal-context";
-import type { NewPost, UpdatePost } from "@/entities/post/model/types";
+import { useState } from "react"
+import { X } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { Button, Input, Textarea, Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/shared/ui"
+import { useCreatePost, useUpdatePost } from "@/features/post/model/usePostMutation"
+import { usePostDetail } from "@/entities/post/model/usePostQuery"
+import { useUserList } from "@/entities/user/model/useUserQuery"
+import { useTagList } from "@/entities/tag/model/useTagQuery"
+import { useModalContext } from "@/shared/lib/modal-context"
+import { postKeys } from "@/entities/post/model/queryKeys"
+import { DUMMYJSON_MAX_POST_ID } from "@/shared/config"
+import type { NewPost, UpdatePost, Post, PostListResponse } from "@/entities/post/model/types"
+import type { User } from "@/entities/user/model/types"
+import type { Tag } from "@/entities/tag/model/types"
 
 interface PostFormProps {
-  mode: "create" | "edit";
-  postId?: number;
+  mode: "create" | "edit"
+  postId?: number
 }
 
 /**
- * 게시물 추가/수정 폼
- * mode에 따라 생성 또는 수정 동작
+ * 게시물 추가/수정 폼 (내부 컴포넌트)
+ * 데이터 로딩 완료 후 렌더링됨
  */
-export const PostForm = ({ mode, postId }: PostFormProps) => {
-  const { closeModal } = useModalContext();
-  const createPost = useCreatePost();
-  const updatePost = useUpdatePost();
+const PostFormInner = ({
+  mode,
+  postId,
+  initialData,
+  closeModal,
+  users,
+  tags,
+}: {
+  mode: "create" | "edit"
+  postId?: number
+  initialData: NewPost
+  closeModal: () => void
+  users: User[]
+  tags: Tag[]
+}) => {
+  const createPost = useCreatePost()
+  const updatePost = useUpdatePost()
 
-  // 수정 모드일 때 기존 데이터 로드
-  const { data: existingPost } = usePostDetail(postId ?? 0);
-
-  const [formData, setFormData] = useState<NewPost>({
-    title: "",
-    body: "",
-    userId: 1,
-  });
-
-  // 수정 모드: 기존 데이터로 폼 초기화
-  useEffect(() => {
-    if (mode === "edit" && existingPost) {
-      setFormData({
-        title: existingPost.title,
-        body: existingPost.body,
-        userId: existingPost.userId,
-      });
-    }
-  }, [mode, existingPost]);
+  // 초기값을 직접 사용 (useEffect 불필요)
+  const [formData, setFormData] = useState<NewPost>(initialData)
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (mode === "create") {
-      createPost.mutate(formData, {
-        onSuccess: () => {
-          closeModal();
-        },
-      });
+      createPost.mutate(formData)
+      // 낙관적 업데이트 완료 후 바로 모달 닫기
+      closeModal()
     } else if (mode === "edit" && postId) {
       const updateData: UpdatePost = {
         title: formData.title,
         body: formData.body,
-      };
-      updatePost.mutate(
-        { id: postId, data: updateData },
-        {
-          onSuccess: () => {
-            closeModal();
-          },
-        }
-      );
+        tags: formData.tags,
+      }
+      updatePost.mutate({ id: postId, data: updateData })
+      // 낙관적 업데이트 완료 후 바로 모달 닫기
+      closeModal()
     }
-  };
+  }
 
-  const isPending = createPost.isPending || updatePost.isPending;
+  // 태그 추가 핸들러
+  const handleAddTag = (tagSlug: string) => {
+    if (tagSlug && !formData.tags?.includes(tagSlug)) {
+      setFormData((prev) => ({
+        ...prev,
+        tags: [...(prev.tags || []), tagSlug],
+      }))
+    }
+  }
+
+  // 태그 제거 핸들러
+  const handleRemoveTag = (tagSlug: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags?.filter((t) => t !== tagSlug) || [],
+    }))
+  }
+
+  // 선택 가능한 태그 (이미 선택된 태그 제외)
+  const availableTags = tags.filter((tag) => !formData.tags?.includes(tag.slug))
+
+  const isPending = createPost.isPending || updatePost.isPending
+
+  // 선택된 사용자 찾기
+  const selectedUser = users.find((u) => u.id === formData.userId)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -72,9 +94,7 @@ export const PostForm = ({ mode, postId }: PostFormProps) => {
         <label className="block text-sm font-medium mb-1">제목</label>
         <Input
           value={formData.title}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, title: e.target.value }))
-          }
+          onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
           placeholder="제목을 입력하세요"
           required
         />
@@ -84,12 +104,83 @@ export const PostForm = ({ mode, postId }: PostFormProps) => {
         <label className="block text-sm font-medium mb-1">내용</label>
         <Textarea
           value={formData.body}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, body: e.target.value }))
-          }
+          onChange={(e) => setFormData((prev) => ({ ...prev, body: e.target.value }))}
           placeholder="내용을 입력하세요"
           required
         />
+      </div>
+
+      {/* 작성자 선택 (생성 모드에서만 변경 가능) */}
+      <div>
+        <label className="block text-sm font-medium mb-1">작성자</label>
+        <Select
+          value={String(formData.userId)}
+          onValueChange={(value) => setFormData((prev) => ({ ...prev, userId: Number(value) }))}
+          disabled={mode === "edit"}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="작성자를 선택하세요">
+              {selectedUser && (
+                <div className="flex items-center gap-2">
+                  <img src={selectedUser.image} alt={selectedUser.username} className="w-5 h-5 rounded-full" />
+                  <span>{selectedUser.username}</span>
+                </div>
+              )}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {users.map((user) => (
+              <SelectItem key={user.id} value={String(user.id)}>
+                <div className="flex items-center gap-2">
+                  <img src={user.image} alt={user.username} className="w-5 h-5 rounded-full" />
+                  <span>{user.username}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* 태그 선택 */}
+      <div>
+        <label className="block text-sm font-medium mb-1">태그</label>
+        {/* 선택된 태그 chip 표시 */}
+        {formData.tags && formData.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {formData.tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800"
+              >
+                {tag}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTag(tag)}
+                  className="hover:bg-blue-200 rounded-full p-0.5"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        {/* 태그 추가 셀렉트 */}
+        <Select value="" onValueChange={handleAddTag}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="태그를 선택하세요" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableTags.length === 0 ? (
+              <div className="px-2 py-1.5 text-sm text-gray-500">선택 가능한 태그가 없습니다</div>
+            ) : (
+              availableTags.map((tag) => (
+                <SelectItem key={tag.slug} value={tag.slug}>
+                  {tag.slug}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex justify-end gap-2">
@@ -101,5 +192,91 @@ export const PostForm = ({ mode, postId }: PostFormProps) => {
         </Button>
       </div>
     </form>
-  );
-};
+  )
+}
+
+/**
+ * 캐시에서 게시글 찾기 (낙관적 업데이트된 게시글 포함)
+ */
+const findPostInCache = (queryClient: ReturnType<typeof useQueryClient>, postId: number): Post | undefined => {
+  // 목록 캐시들에서 게시글 찾기
+  const allListCaches = queryClient.getQueriesData<PostListResponse>({ queryKey: postKeys.lists() })
+
+  for (const [, data] of allListCaches) {
+    if (data?.posts) {
+      const found = data.posts.find((post) => post.id === postId)
+      if (found) return found
+    }
+  }
+
+  return undefined
+}
+
+/**
+ * 게시물 추가/수정 폼 (외부 컴포넌트)
+ * - ID 1~251 (실제 데이터): 캐시 → API fallback
+ * - ID 252+ (낙관적 생성): 캐시에서만 조회
+ */
+export const PostForm = ({ mode, postId }: PostFormProps) => {
+  const { closeModal } = useModalContext()
+  const queryClient = useQueryClient()
+
+  // 사용자 목록 로드
+  const { data: userListData, isLoading: isLoadingUsers } = useUserList()
+  const users = userListData?.users ?? []
+
+  // 태그 목록 로드
+  const { data: tagsData } = useTagList()
+  const tags = tagsData ?? []
+
+  // 수정 모드일 때 캐시에서 먼저 게시글 찾기
+  const cachedPost = mode === "edit" && postId ? findPostInCache(queryClient, postId) : undefined
+
+  // 실제 DummyJSON 데이터(ID 1~251)는 API에서도 조회 시도
+  const isRealData = postId !== undefined && postId <= DUMMYJSON_MAX_POST_ID
+  const { data: apiPost, isLoading: isLoadingPost } = usePostDetail(
+    mode === "edit" && isRealData && !cachedPost ? (postId ?? 0) : 0
+  )
+
+  // 캐시 우선, 없으면 API 데이터 사용
+  const existingPost = cachedPost || apiPost
+
+  // 로딩 중
+  if (isLoadingUsers || (isLoadingPost && isRealData && !cachedPost)) {
+    return <div className="p-4 text-center">로딩 중...</div>
+  }
+
+  // 수정 모드인데 게시글을 찾을 수 없는 경우
+  if (mode === "edit" && !existingPost) {
+    return <div className="p-4 text-center text-red-500">게시글을 찾을 수 없습니다.</div>
+  }
+
+  // 초기값 결정: 수정 모드면 기존 데이터, 생성 모드면 빈 값
+  const initialData: NewPost =
+    mode === "edit" && existingPost
+      ? {
+          title: existingPost.title,
+          body: existingPost.body,
+          userId: existingPost.userId,
+          tags: existingPost.tags ?? [],
+        }
+      : {
+          title: "",
+          body: "",
+          userId: users[0]?.id ?? 1,
+          tags: [],
+        }
+
+  // key를 사용하여 postId가 변경되면 Inner 컴포넌트 리마운트
+  return (
+    <PostFormInner
+      key={postId ?? "create"}
+      mode={mode}
+      postId={postId}
+      initialData={initialData}
+      closeModal={closeModal}
+      users={users}
+      tags={tags}
+    />
+  )
+}

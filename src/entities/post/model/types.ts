@@ -27,12 +27,14 @@ export interface NewPost {
   title: string;
   body: string;
   userId: number;
+  tags?: string[];
 }
 
 // 게시물 수정용 타입
 export interface UpdatePost {
   title?: string;
   body?: string;
+  tags?: string[];
 }
 
 // 게시물 목록 조회 파라미터
@@ -40,6 +42,8 @@ export interface PostListParams {
   limit: number;
   skip: number;
   tag?: string;
+  sortBy?: string;
+  order?: "asc" | "desc";
 }
 
 // 게시물 목록 API 응답

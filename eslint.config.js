@@ -8,6 +8,7 @@ export default [
   { ignores: ['dist', '**/*.tsbuildinfo'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -161,7 +162,8 @@ export default [
   },
 
   // ========================================
-  // features/post 슬라이스 규칙 (다른 슬라이스 금지)
+  // features/post 슬라이스 규칙 (레이어 위반 + 다른 슬라이스 금지)
+  // ⚠️ 주의: 이 블록이 features 공통 규칙을 덮어쓰므로 모든 규칙 포함 필요
   // ========================================
   {
     files: ['src/features/post/**/*.{ts,tsx}'],
@@ -171,7 +173,25 @@ export default [
         {
           patterns: [
             {
-              group: ['@/features/comment/*', '@/features/user/*', '@/features/auth/*', '@/features/payment/*'],
+              group: ['../*'],
+              message: '❌ 상대 경로는 사용할 수 없습니다. @ alias를 사용하세요.',
+            },
+            // 레이어 위반 금지 (features 공통 규칙 상속)
+            {
+              group: ['@/app/*', '@/app/**/*'],
+              message: '❌ features는 app을 import할 수 없습니다. (하위 → 상위 참조 금지)',
+            },
+            {
+              group: ['@/pages/*', '@/pages/**/*'],
+              message: '❌ features는 pages를 import할 수 없습니다. (하위 → 상위 참조 금지)',
+            },
+            {
+              group: ['@/widgets/*', '@/widgets/**/*'],
+              message: '❌ features는 widgets를 import할 수 없습니다. (하위 → 상위 참조 금지)',
+            },
+            // 슬라이스 간 의존성 금지
+            {
+              group: ['@/features/comment/*', '@/features/comment/**/*', '@/features/user/*', '@/features/user/**/*', '@/features/auth/*', '@/features/auth/**/*', '@/features/payment/*', '@/features/payment/**/*'],
               message: '❌ Feature 슬라이스 간 직접 의존성은 금지됩니다.\n💡 공통 로직은 entities나 shared로 추출하세요.',
             },
           ],
@@ -181,7 +201,7 @@ export default [
   },
 
   // ========================================
-  // features/comment 슬라이스 규칙 (다른 슬라이스 금지)
+  // features/comment 슬라이스 규칙 (레이어 위반 + 다른 슬라이스 금지)
   // ========================================
   {
     files: ['src/features/comment/**/*.{ts,tsx}'],
@@ -191,7 +211,25 @@ export default [
         {
           patterns: [
             {
-              group: ['@/features/post/*', '@/features/user/*', '@/features/auth/*', '@/features/payment/*'],
+              group: ['../*'],
+              message: '❌ 상대 경로는 사용할 수 없습니다. @ alias를 사용하세요.',
+            },
+            // 레이어 위반 금지 (features 공통 규칙 상속)
+            {
+              group: ['@/app/*', '@/app/**/*'],
+              message: '❌ features는 app을 import할 수 없습니다. (하위 → 상위 참조 금지)',
+            },
+            {
+              group: ['@/pages/*', '@/pages/**/*'],
+              message: '❌ features는 pages를 import할 수 없습니다. (하위 → 상위 참조 금지)',
+            },
+            {
+              group: ['@/widgets/*', '@/widgets/**/*'],
+              message: '❌ features는 widgets를 import할 수 없습니다. (하위 → 상위 참조 금지)',
+            },
+            // 슬라이스 간 의존성 금지
+            {
+              group: ['@/features/post/*', '@/features/post/**/*', '@/features/user/*', '@/features/user/**/*', '@/features/auth/*', '@/features/auth/**/*', '@/features/payment/*', '@/features/payment/**/*'],
               message: '❌ Feature 슬라이스 간 직접 의존성은 금지됩니다.\n💡 공통 로직은 entities나 shared로 추출하세요.',
             },
           ],
@@ -292,6 +330,18 @@ export default [
           fixStyle: 'separate-type-imports',
         },
       ],
+    },
+  },
+
+  // ========================================
+  // 루트 파일 예외 (FSD 레이어 아님)
+  // CSS import 및 App import는 상대경로 허용
+  // 맨 마지막에 배치하여 다른 규칙을 override
+  // ========================================
+  {
+    files: ['**/main.tsx', '**/App.tsx'],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
 ]

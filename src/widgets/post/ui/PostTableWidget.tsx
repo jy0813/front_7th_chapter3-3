@@ -39,6 +39,24 @@ export const PostTableWidget = ({
     return <div className="flex justify-center p-4">로딩 중...</div>;
   }
 
+  if (posts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+        <p className="text-lg">게시물이 없습니다.</p>
+        {searchQuery && (
+          <p className="text-sm mt-1">
+            "{searchQuery}"에 대한 검색 결과가 없습니다.
+          </p>
+        )}
+        {selectedTag && !searchQuery && (
+          <p className="text-sm mt-1">
+            "{selectedTag}" 태그의 게시물이 없습니다.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
@@ -99,7 +117,7 @@ export const PostTableWidget = ({
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-2">
-                <PostDetailButton postId={post.id} />
+                <PostDetailButton postId={post.id} searchQuery={searchQuery} />
                 <EditPostButton postId={post.id} />
                 <DeletePostButton postId={post.id} />
               </div>

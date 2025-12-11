@@ -44,30 +44,32 @@ export const CommentListWidget = ({
         {comments.map((comment) => (
           <div
             key={comment.id}
-            className="flex items-center justify-between text-sm border-b pb-1"
+            className="text-sm border-b pb-1"
           >
-            <div className="flex items-center space-x-2 overflow-hidden">
-              <span className="font-medium truncate">
-                {comment.user.username}:
-              </span>
-              <span className="truncate">
-                {highlightText(comment.body, searchQuery)}
-              </span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <LikeCommentButton
-                commentId={comment.id}
-                postId={postId}
-                currentLikes={comment.likes}
-              />
-              <EditCommentButton
-                commentId={comment.id}
-                postId={postId}
-              />
-              <DeleteCommentButton
-                commentId={comment.id}
-                postId={postId}
-              />
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <span className="font-medium">
+                  {comment.user.username}:
+                </span>
+                <span className="ml-1 break-words whitespace-pre-wrap">
+                  {highlightText(comment.body, searchQuery)}
+                </span>
+              </div>
+              <div className="flex items-center space-x-1 flex-shrink-0">
+                <LikeCommentButton
+                  commentId={comment.id}
+                  postId={postId}
+                  currentLikes={comment.likes}
+                />
+                <EditCommentButton
+                  commentId={comment.id}
+                  postId={postId}
+                />
+                <DeleteCommentButton
+                  commentId={comment.id}
+                  postId={postId}
+                />
+              </div>
             </div>
           </div>
         ))}

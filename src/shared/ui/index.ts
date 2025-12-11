@@ -4,41 +4,23 @@
  */
 
 // Button
-export { Button, buttonVariants } from "./Button";
-export type { ButtonProps } from "./Button";
+export { Button } from "./Button"
+export type { ButtonProps } from "./Button"
 
 // Input
-export { Input } from "./Input";
-export type { InputProps } from "./Input";
+export { Input } from "./Input"
+export type { InputProps } from "./Input"
 
 // Textarea
-export { Textarea } from "./Textarea";
-export type { TextareaProps } from "./Textarea";
+export { Textarea } from "./Textarea"
+export type { TextareaProps } from "./Textarea"
 
 // Select
-export {
-  Select,
-  SelectGroup,
-  SelectValue,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "./Select";
-export type {
-  SelectTriggerProps,
-  SelectContentProps,
-  SelectItemProps,
-} from "./Select";
+export { Select, SelectGroup, SelectValue, SelectTrigger, SelectContent, SelectItem } from "./Select"
+export type { SelectTriggerProps, SelectContentProps, SelectItemProps } from "./Select"
 
 // Table
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "./Table";
+export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./Table"
 export type {
   TableProps,
   TableHeaderProps,
@@ -46,29 +28,12 @@ export type {
   TableRowProps,
   TableHeadProps,
   TableCellProps,
-} from "./Table";
+} from "./Table"
 
 // Card
-export { Card, CardHeader, CardTitle, CardContent } from "./Card";
-export type {
-  CardProps,
-  CardHeaderProps,
-  CardTitleProps,
-  CardContentProps,
-} from "./Card";
+export { Card, CardHeader, CardTitle, CardContent } from "./Card"
+export type { CardProps, CardHeaderProps, CardTitleProps, CardContentProps } from "./Card"
 
 // Dialog
-export {
-  Dialog,
-  DialogTrigger,
-  DialogPortal,
-  DialogOverlay,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "./Dialog";
-export type {
-  DialogContentProps,
-  DialogHeaderProps,
-  DialogTitleProps,
-} from "./Dialog";
+export { Dialog, DialogTrigger, DialogPortal, DialogOverlay, DialogContent, DialogHeader, DialogTitle } from "./Dialog"
+export type { DialogContentProps, DialogHeaderProps, DialogTitleProps } from "./Dialog"
