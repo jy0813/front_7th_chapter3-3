@@ -104,7 +104,7 @@ export default [
         {
           patterns: [
             {
-              group: ['../*', './*'],
+              group: ['../*'],
               message: '❌ 상대 경로는 사용할 수 없습니다. @ alias를 사용하세요.',
             },
             // ❌ 문제 1, 4: 잘못된 레이어 import (app 전체 금지)

@@ -1,0 +1,1 @@
+export { PostTableWidget } from "./PostTableWidget";
