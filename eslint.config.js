@@ -123,7 +123,7 @@ export default [
   },
 
   // ========================================
-  // features 계층 규칙 (가장 엄격)
+  // features 계층 규칙 - 공통 (레이어 위반 금지)
   // ========================================
   {
     files: ['src/features/**/*.{ts,tsx}'],
@@ -133,10 +133,10 @@ export default [
         {
           patterns: [
             {
-              group: ['../*', './*'],
+              group: ['../*'],
               message: '❌ 상대 경로는 사용할 수 없습니다. @ alias를 사용하세요.',
             },
-            // ❌ 문제 1: 잘못된 레이어 import
+            // ❌ 잘못된 레이어 import
             {
               group: ['@/app/*'],
               message: '❌ features는 app을 import할 수 없습니다. (하위 → 상위 참조 금지)',
@@ -149,15 +149,50 @@ export default [
               group: ['@/widgets/*'],
               message: '❌ features는 widgets를 import할 수 없습니다. (하위 → 상위 참조 금지)',
             },
-            // ❌ 문제 3: Slice 간 의존성 금지
-            {
-              group: ['@/features/auth/*', '@/features/payment/*', '@/features/post/*', '@/features/comment/*', '@/features/user/*'],
-              message: '❌ Feature 슬라이스 간 직접 의존성은 금지됩니다.\n💡 공통 로직은 entities나 shared로 추출하세요.',
-            },
-            // ❌ 문제 4: 전역 상태 직접 접근 금지
+            // ❌ 전역 상태 직접 접근 금지
             {
               group: ['@/app/stores/*'],
               message: '❌ features는 전역 상태를 직접 import할 수 없습니다.\n💡 Context나 Props로 콜백을 받아 사용하세요.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // ========================================
+  // features/post 슬라이스 규칙 (다른 슬라이스 금지)
+  // ========================================
+  {
+    files: ['src/features/post/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/features/comment/*', '@/features/user/*', '@/features/auth/*', '@/features/payment/*'],
+              message: '❌ Feature 슬라이스 간 직접 의존성은 금지됩니다.\n💡 공통 로직은 entities나 shared로 추출하세요.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // ========================================
+  // features/comment 슬라이스 규칙 (다른 슬라이스 금지)
+  // ========================================
+  {
+    files: ['src/features/comment/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/features/post/*', '@/features/user/*', '@/features/auth/*', '@/features/payment/*'],
+              message: '❌ Feature 슬라이스 간 직접 의존성은 금지됩니다.\n💡 공통 로직은 entities나 shared로 추출하세요.',
             },
           ],
         },
