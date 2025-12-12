@@ -1,4 +1,5 @@
 import type { TagListResponse } from "@/entities/tag/model/types";
+import { API_BASE_URL } from "@/shared/config";
 
 /**
  * Tag 도메인 API 함수
@@ -9,7 +10,7 @@ export const tagApi = {
    * 태그 목록 조회
    */
   getList: async (): Promise<TagListResponse> => {
-    const response = await fetch("/api/posts/tags");
+    const response = await fetch(`${API_BASE_URL}/posts/tags`);
     if (!response.ok) {
       throw new Error("태그 목록을 가져오는데 실패했습니다.");
     }

@@ -6,6 +6,13 @@
  * - 낙관적 생성 데이터: 클라이언트에서만 존재 (캐시)
  */
 
+/**
+ * API Base URL
+ * - 개발 환경: /api (Vite proxy로 dummyjson.com으로 프록시)
+ * - 프로덕션 환경: https://dummyjson.com (GitHub Pages 등 정적 호스팅)
+ */
+export const API_BASE_URL = import.meta.env.DEV ? "/api" : "https://dummyjson.com"
+
 // DummyJSON의 실제 게시물 데이터 최대 ID (1~251)
 export const DUMMYJSON_MAX_POST_ID = 251
 

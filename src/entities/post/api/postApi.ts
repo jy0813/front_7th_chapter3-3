@@ -4,7 +4,8 @@ import type {
   UpdatePost,
   PostListParams,
   PostListResponse,
-} from "@/entities/post/model/types";
+} from "@/entities/post/model/types"
+import { API_BASE_URL } from "@/shared/config"
 
 /**
  * Post 도메인 API 함수
@@ -18,16 +19,16 @@ export const postApi = {
     const searchParams = new URLSearchParams({
       limit: String(params.limit),
       skip: String(params.skip),
-    });
+    })
 
     if (params.sortBy && params.sortBy !== "none") {
-      searchParams.set("sortBy", params.sortBy);
+      searchParams.set("sortBy", params.sortBy)
     }
     if (params.order) {
-      searchParams.set("order", params.order);
+      searchParams.set("order", params.order)
     }
 
-    const response = await fetch(`/api/posts?${searchParams.toString()}`);
+    const response = await fetch(`${API_BASE_URL}/posts?${searchParams.toString()}`)
     if (!response.ok) {
       throw new Error("게시물 목록을 가져오는데 실패했습니다.");
     }
@@ -38,7 +39,7 @@ export const postApi = {
    * 게시물 상세 조회
    */
   getById: async (id: number): Promise<Post> => {
-    const response = await fetch(`/api/posts/${id}`);
+    const response = await fetch(`${API_BASE_URL}/posts/${id}`)
     if (!response.ok) {
       throw new Error("게시물을 가져오는데 실패했습니다.");
     }
@@ -49,7 +50,7 @@ export const postApi = {
    * 게시물 검색
    */
   search: async (query: string): Promise<PostListResponse> => {
-    const response = await fetch(`/api/posts/search?q=${encodeURIComponent(query)}`);
+    const response = await fetch(`${API_BASE_URL}/posts/search?q=${encodeURIComponent(query)}`)
     if (!response.ok) {
       throw new Error("게시물 검색에 실패했습니다.");
     }
@@ -60,7 +61,7 @@ export const postApi = {
    * 태그별 게시물 조회
    */
   getByTag: async (tag: string): Promise<PostListResponse> => {
-    const response = await fetch(`/api/posts/tag/${encodeURIComponent(tag)}`);
+    const response = await fetch(`${API_BASE_URL}/posts/tag/${encodeURIComponent(tag)}`)
     if (!response.ok) {
       throw new Error("태그별 게시물을 가져오는데 실패했습니다.");
     }
@@ -71,7 +72,7 @@ export const postApi = {
    * 게시물 생성
    */
   create: async (data: NewPost): Promise<Post> => {
-    const response = await fetch("/api/posts/add", {
+    const response = await fetch(`${API_BASE_URL}/posts/add`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -86,7 +87,7 @@ export const postApi = {
    * 게시물 수정
    */
   update: async (id: number, data: UpdatePost): Promise<Post> => {
-    const response = await fetch(`/api/posts/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/posts/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -101,7 +102,7 @@ export const postApi = {
    * 게시물 삭제
    */
   delete: async (id: number): Promise<void> => {
-    const response = await fetch(`/api/posts/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/posts/${id}`, {
       method: "DELETE",
     });
     if (!response.ok) {
