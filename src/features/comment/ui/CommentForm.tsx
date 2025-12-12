@@ -1,8 +1,16 @@
-import { useState } from "react"
+/**
+ * 댓글 추가/수정 폼
+ *
+ * 리팩토링 완료:
+ * - 렌더링 중 setState 안티패턴 제거
+ * - 모든 계산 로직 → entities/comment/lib 순수함수로 분리
+ */
+import { useState, useMemo } from "react"
 import { Button, Textarea, Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/shared/ui"
 import { useCreateComment, useUpdateComment } from "@/features/comment/model/useCommentMutation"
 import { useUserList } from "@/entities/user/model/useUserQuery"
 import { useModalContext } from "@/shared/lib/modal-context"
+import { getDefaultUserId, getEffectiveUserId, findUserById } from "@/entities/comment/lib"
 
 interface CommentFormProps {
   mode: "create" | "edit"
@@ -26,19 +34,21 @@ export const CommentForm = ({ mode, postId, commentId, initialBody = "", initial
 
   // 사용자 목록 로드
   const { data: userListData, isLoading: isLoadingUsers } = useUserList()
-  const users = userListData?.users ?? []
 
-  // 초기값 설정 - initialUserId가 있으면 우선 사용
+  // users 배열을 useMemo로 안정화 (ESLint react-hooks/exhaustive-deps 경고 해결)
+  const users = useMemo(() => userListData?.users ?? [], [userListData?.users])
+
+  // 기본 userId 계산 (순수함수 사용)
+  const defaultUserId = useMemo(() => {
+    return getDefaultUserId(initialUserId, users)
+  }, [initialUserId, users])
+
+  // 폼 상태 (초기값은 props에서 직접 설정)
   const [body, setBody] = useState(initialBody)
   const [userId, setUserId] = useState<number | undefined>(initialUserId)
 
-  // 사용자 목록 로드 후 초기값 설정 (create 모드에서만)
-  if (userId === undefined && users.length > 0) {
-    setUserId(users[0].id)
-  }
-
-  // userId가 아직 설정되지 않은 경우 로딩 표시
-  const effectiveUserId = userId ?? users[0]?.id ?? 1
+  // 유효한 userId 결정 (순수함수 사용)
+  const effectiveUserId = getEffectiveUserId(userId, defaultUserId)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,8 +74,8 @@ export const CommentForm = ({ mode, postId, commentId, initialBody = "", initial
 
   const isPending = createComment.isPending || updateComment.isPending
 
-  // 선택된 사용자 찾기
-  const selectedUser = users.find((u) => u.id === effectiveUserId)
+  // 선택된 사용자 찾기 (순수함수 사용)
+  const selectedUser = findUserById(users, effectiveUserId)
 
   if (isLoadingUsers) {
     return <div className="p-4 text-center">로딩 중...</div>
@@ -81,11 +91,7 @@ export const CommentForm = ({ mode, postId, commentId, initialBody = "", initial
       {/* 작성자 선택 (생성 모드에서만 변경 가능) */}
       <div>
         <label className="block text-sm font-medium mb-1">작성자</label>
-        <Select
-          value={String(effectiveUserId)}
-          onValueChange={(value) => setUserId(Number(value))}
-          disabled={mode === "edit"}
-        >
+        <Select value={String(effectiveUserId)} onValueChange={(value) => setUserId(Number(value))} disabled={mode === "edit"}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="작성자를 선택하세요">
               {selectedUser && (

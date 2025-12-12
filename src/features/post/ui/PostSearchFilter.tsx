@@ -1,14 +1,7 @@
-import { Search, RotateCcw } from "lucide-react";
-import {
-  Input,
-  Button,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/ui";
-import { useTagList } from "@/entities/tag/model/useTagQuery";
+import { Search, RotateCcw } from "lucide-react"
+import { Input, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui"
+import { useTagList } from "@/entities/tag/model/useTagQuery"
+import { hasActiveFilters } from "@/entities/post/lib"
 
 interface PostSearchFilterProps {
   searchQuery: string;
@@ -37,11 +30,11 @@ export const PostSearchFilter = ({
   onOrderChange,
   onReset,
 }: PostSearchFilterProps) => {
-  const { data: tagsData } = useTagList();
-  const tags = tagsData ?? [];
+  const { data: tagsData } = useTagList()
+  const tags = tagsData ?? []
 
-  // 필터/정렬이 적용되었는지 확인
-  const hasFilters = searchQuery || selectedTag || sortBy || order !== "asc";
+  // 필터/정렬이 적용되었는지 확인 (순수함수 사용)
+  const hasFilters = hasActiveFilters(searchQuery, selectedTag, sortBy, order)
 
   return (
     <div className="flex gap-4">

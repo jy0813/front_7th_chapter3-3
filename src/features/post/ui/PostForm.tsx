@@ -1,3 +1,9 @@
+/**
+ * 게시물 추가/수정 폼
+ *
+ * 리팩토링 완료:
+ * - 모든 계산 로직 → entities/post/lib 순수함수로 분리
+ */
 import { useState } from "react"
 import { X } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
@@ -7,9 +13,16 @@ import { usePostDetail } from "@/entities/post/model/usePostQuery"
 import { useUserList } from "@/entities/user/model/useUserQuery"
 import { useTagList } from "@/entities/tag/model/useTagQuery"
 import { useModalContext } from "@/shared/lib/modal-context"
-import { postKeys } from "@/entities/post/model/queryKeys"
-import { DUMMYJSON_MAX_POST_ID } from "@/shared/config"
-import type { NewPost, UpdatePost, Post, PostListResponse } from "@/entities/post/model/types"
+import {
+  findPostInCache,
+  isRealPostData,
+  getInitialPostData,
+  getAvailableTags,
+  addTag,
+  removeTag,
+  findUserById,
+} from "@/entities/post/lib"
+import type { NewPost, UpdatePost } from "@/entities/post/model/types"
 import type { User } from "@/entities/user/model/types"
 import type { Tag } from "@/entities/tag/model/types"
 
@@ -62,31 +75,29 @@ const PostFormInner = ({
     }
   }
 
-  // 태그 추가 핸들러
+  // 태그 추가 핸들러 (순수함수 사용)
   const handleAddTag = (tagSlug: string) => {
-    if (tagSlug && !formData.tags?.includes(tagSlug)) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...(prev.tags || []), tagSlug],
-      }))
-    }
-  }
-
-  // 태그 제거 핸들러
-  const handleRemoveTag = (tagSlug: string) => {
     setFormData((prev) => ({
       ...prev,
-      tags: prev.tags?.filter((t) => t !== tagSlug) || [],
+      tags: addTag(prev.tags, tagSlug),
     }))
   }
 
-  // 선택 가능한 태그 (이미 선택된 태그 제외)
-  const availableTags = tags.filter((tag) => !formData.tags?.includes(tag.slug))
+  // 태그 제거 핸들러 (순수함수 사용)
+  const handleRemoveTag = (tagSlug: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: removeTag(prev.tags, tagSlug),
+    }))
+  }
+
+  // 선택 가능한 태그 (순수함수 사용)
+  const availableTags = getAvailableTags(tags, formData.tags)
 
   const isPending = createPost.isPending || updatePost.isPending
 
-  // 선택된 사용자 찾기
-  const selectedUser = users.find((u) => u.id === formData.userId)
+  // 선택된 사용자 찾기 (순수함수 사용)
+  const selectedUser = findUserById(users, formData.userId)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -153,11 +164,7 @@ const PostFormInner = ({
                 className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800"
               >
                 {tag}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(tag)}
-                  className="hover:bg-blue-200 rounded-full p-0.5"
-                >
+                <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:bg-blue-200 rounded-full p-0.5">
                   <X className="w-3 h-3" />
                 </button>
               </span>
@@ -196,23 +203,6 @@ const PostFormInner = ({
 }
 
 /**
- * 캐시에서 게시글 찾기 (낙관적 업데이트된 게시글 포함)
- */
-const findPostInCache = (queryClient: ReturnType<typeof useQueryClient>, postId: number): Post | undefined => {
-  // 목록 캐시들에서 게시글 찾기
-  const allListCaches = queryClient.getQueriesData<PostListResponse>({ queryKey: postKeys.lists() })
-
-  for (const [, data] of allListCaches) {
-    if (data?.posts) {
-      const found = data.posts.find((post) => post.id === postId)
-      if (found) return found
-    }
-  }
-
-  return undefined
-}
-
-/**
  * 게시물 추가/수정 폼 (외부 컴포넌트)
  * - ID 1~251 (실제 데이터): 캐시 → API fallback
  * - ID 252+ (낙관적 생성): 캐시에서만 조회
@@ -229,13 +219,13 @@ export const PostForm = ({ mode, postId }: PostFormProps) => {
   const { data: tagsData } = useTagList()
   const tags = tagsData ?? []
 
-  // 수정 모드일 때 캐시에서 먼저 게시글 찾기
+  // 수정 모드일 때 캐시에서 먼저 게시글 찾기 (순수함수 사용)
   const cachedPost = mode === "edit" && postId ? findPostInCache(queryClient, postId) : undefined
 
-  // 실제 DummyJSON 데이터(ID 1~251)는 API에서도 조회 시도
-  const isRealData = postId !== undefined && postId <= DUMMYJSON_MAX_POST_ID
+  // 실제 DummyJSON 데이터 여부 확인 (순수함수 사용)
+  const isRealData = isRealPostData(postId)
   const { data: apiPost, isLoading: isLoadingPost } = usePostDetail(
-    mode === "edit" && isRealData && !cachedPost ? (postId ?? 0) : 0
+    mode === "edit" && isRealData && !cachedPost ? (postId ?? 0) : 0,
   )
 
   // 캐시 우선, 없으면 API 데이터 사용
@@ -251,21 +241,8 @@ export const PostForm = ({ mode, postId }: PostFormProps) => {
     return <div className="p-4 text-center text-red-500">게시글을 찾을 수 없습니다.</div>
   }
 
-  // 초기값 결정: 수정 모드면 기존 데이터, 생성 모드면 빈 값
-  const initialData: NewPost =
-    mode === "edit" && existingPost
-      ? {
-          title: existingPost.title,
-          body: existingPost.body,
-          userId: existingPost.userId,
-          tags: existingPost.tags ?? [],
-        }
-      : {
-          title: "",
-          body: "",
-          userId: users[0]?.id ?? 1,
-          tags: [],
-        }
+  // 초기값 결정 (순수함수 사용)
+  const initialData: NewPost = getInitialPostData(mode, existingPost, users)
 
   // key를 사용하여 postId가 변경되면 Inner 컴포넌트 리마운트
   return (
